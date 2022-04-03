@@ -1,0 +1,741 @@
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>Save Gogo - Ludum Dare 50 Entry</title>
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:creator" content="@AndreBaltazar" />
+    <meta name="twitter:title" content="Save Gogo" />
+    <meta name="twitter:description" content="Help feed Gogo to give him a long life." />
+    <meta name="twitter:image" content="https://savegogo.icy.pt/static/cover.png" />
+    <meta property="og:title" content="Save Gogo" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://savegogo.icy.pt/" />
+    <meta property="og:image" content="https://savegogo.icy.pt/static/cover.png" />
+    <style>
+        @font-face {
+            font-family: 'Press Start 2P';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url('static/PressStart2P-Regular-Latin.woff2') format('woff2');
+            unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+        }
+
+        html, body {
+            padding: 1vh;
+            margin: 0;
+            overscroll-behavior: contain;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        body p {
+            max-width: 50vh;
+            margin: 3vh auto;
+            font-size: 3vh;
+        }
+
+        p#title {
+            font-size: 5vh;
+            text-align: center;
+        }
+
+        p#credits {
+            font-size: 2vh;
+        }
+
+        #info {
+            position: absolute;
+            text-align: center;
+            width: 100%;
+            z-index: 100;
+            font-size: 4vh;
+            top: 30vh;
+        }
+
+        #info > div {
+            background: rgba(0, 0, 0, 0.9);
+            padding: 2vh;
+            color: lightgreen;
+            display: inline-block;
+        }
+
+        #info > div.error {
+            color: red;
+        }
+
+        #game {
+            font-size: 0;
+            max-width: 50vh;
+            margin: 0 auto;
+            user-select: none;
+            position: relative;
+            text-align: center;
+        }
+
+        #death-timer {
+            font-size: 3vh;
+            background: #008100;
+            border-radius: 4px;
+            border: 6px solid #c9c900;
+            font-family: 'Press Start 2P';
+            display: inline-block;
+            padding: 8px 4px;
+            color: #ebeae4;
+            margin: 20px;
+        }
+
+        #death-time, #alive-time {
+            font-size: 1vh;
+        }
+
+        #dog-container {
+            margin: 20px;
+            position: relative;
+        }
+
+        #feed {
+            margin: 0 0 3px 0;
+            font-size: 20px;
+            font-weight: bold;
+            display: inline-block;
+            background: #0a0;
+            padding: 10px 20px;
+            box-shadow: 0 4px 2px #090;
+            border: 0;
+            cursor: pointer;
+            color: #fff;
+        }
+
+        #feed:disabled {
+            cursor: not-allowed;
+            color: #aaa;
+            background: #060;
+            box-shadow: 0 4px 2px #040;
+        }
+
+        #feed:active:not(:disabled) {
+            box-shadow: 0 1px 2px #090;
+            margin-bottom: 0;
+            margin-top: 3px;
+        }
+
+        a {
+            color: #23baff;
+            font-weight: bold;
+        }
+
+        .stats-bar {
+            font-size: 35px;
+        }
+
+        .stats-bar > *, .stat > * {
+            vertical-align: middle;
+        }
+
+        .stat {
+            display: inline-block;
+        }
+
+        .stat-icon {
+            height: 32px;
+        }
+
+        #hunger-bar {
+            display: inline-block;
+            position: absolute;
+            bottom: 0px;
+            background: #ddd;
+            border: 2px solid #958562;
+            width: 20px;
+            height: 200px;
+        }
+
+        #hunger-bar-current {
+            background: red;
+            width: 100%;
+            bottom: 0;
+            position: absolute;
+        }
+
+        #dog-container.alive #head {
+            transform-origin: 50% 40%;
+            animation: bob-head 5s linear infinite;
+            transform: rotate(-5deg);
+            cursor: pointer;
+        }
+
+        @keyframes bob-head {
+            0% {
+                transform: rotate(-5deg);
+            }
+            50% {
+                transform: rotate(5deg);
+            }
+            100% {
+                transform: rotate(-5deg);
+            }
+        }
+
+        #dog-container.alive #tail {
+            transform-origin: 50% 80%;
+            animation: wiggle 7s linear infinite;
+            transform: rotate(8deg);
+        }
+
+        #dog-container.alive #tail.speedup {
+            animation: wiggle 1s linear infinite;
+        }
+
+        @keyframes wiggle {
+            0% {
+                transform: rotate(8deg);
+            }
+            50% {
+                transform: rotate(-16deg);
+            }
+            100% {
+                transform: rotate(8deg);
+            }
+        }
+
+        #dog-container.alive #tongue {
+            transform-origin: 50% 28%;
+            animation: move-tongue 30s linear infinite;
+            transform: rotate(1deg)
+        }
+
+        @keyframes move-tongue {
+            0% {
+                transform: rotate(1deg)
+            }
+            50% {
+                transform: rotate(-0.5deg)
+            }
+            100% {
+                transform: rotate(1deg);
+            }
+        }
+
+        #bone-feed {
+            position: relative;
+            -webkit-user-drag: none;
+            -khtml-user-drag: none;
+            -moz-user-drag: none;
+            -o-user-drag: none;
+            user-drag: none;
+            width: 128px;
+        }
+
+        #bone-feed.can-feed {
+            cursor: pointer;
+        }
+
+        #bone-feed.deny {
+            cursor: not-allowed;
+        }
+
+        #note {
+            font-size: 1.3vh;
+            text-align: justify;
+        }
+
+        #sound {
+            float: right;
+            width: 32px;
+        }
+
+        #share-feed {
+            display: inline-block;
+            font-size: 2vh;
+            padding: 1vh;
+            background: #eee;
+        }
+    </style>
+</head>
+<body>
+<div id="game-container">
+    <p id="title">Save Gogo</p>
+    <div id="info">
+        <div>Connecting...</div>
+    </div>
+    <div id="game">
+        <img id="sound" src="static/sound-on.svg">
+        <div class="stats-bar">
+            <div class="stat">
+                <img alt="Players" src="static/player_count.svg" class="stat-icon">
+                <span id="player-count">0</span>
+            </div>
+            <div class="stat">
+                <img alt="Total Feeders" src="static/feeder_count.svg" class="stat-icon">
+                <span id="feeder-count">0</span>
+            </div>
+            <div class="stat">
+                <img alt="Total Feeds" src="static/total_feeds.svg" class="stat-icon">
+                <span id="total-feeds">0</span>
+            </div>
+        </div>
+        <div id="dog-container" class="alive">
+            {{.}}
+            <div id="hunger-bar">
+                <div id="hunger-bar-current"></div>
+            </div>
+        </div>
+        <div>
+            <div id="death-timer">
+                <div class="value">Loading</div>
+                <div id="death-time"></div>
+                <div id="alive-time"></div>
+            </div>
+        </div>
+        <div id="share-feed" style="display: none">
+            <div>Share with other people that you just feed Gogo. Help extend his life further.</div>
+            <div>
+                <a href="https://twitter.com/intent/tweet?text=Just%20fed%20Gogo%20%F0%9F%90%B6%20%23SaveGogo%0A%0AGo%20help%20keep%20him%20alive%3A%20savegogo.icy.pt" target="_blank">Share on Twitter</a>
+                | <a href="javascript:void(0)" onclick="this.parentNode.parentNode.style.display = 'none';">Dismiss</a>
+            </div>
+        </div>
+        <img id="bone-feed" style="opacity: 0; display: none" src="static/total_feeds.svg">
+        <div>
+            <button id="feed" style="display: none">Feed</button>
+        </div>
+        <p id="note">Hunger controls how much time you add when you feed Gogo. It decreases every time Gogo is fed. It
+            regenerates 6 minutes every 6 minutes, for a max of 60 minutes. If Gogo is fed, the timer resets. You will
+            get randomly disconnected once in a while because of server configuration but Gogo will be fine, until he
+            isn't. Feeding is blocked by IP. Only works on IPv4.</p>
+        </p>
+        <p id="credits">Made by <a href="https://twitter.com/AndreBaltazar" target="_blank">@AndreBaltazar</a> aka <a
+                href="https://ldjam.com/users/mat4dor" target="_blank">MAT4DOR</a> <a
+                href="https://ldjam.com/events/ludum-dare/50/save-gogo">(LD Entry)</a></p>
+    </div>
+</body>
+<script>
+    (function () {
+        let isPlaying = false;
+        let isDead = false;
+        let audioMuted = false;
+        let audioLoop = false;
+        let isPlayingSound = false;
+        let canFeed = false;
+        let currentHunger = 0;
+        let socket;
+
+        function playSound(sound) {
+            if (isPlayingSound) {
+                return;
+            }
+            isPlayingSound = true;
+            let audio = new Audio(sound);
+            audio.play();
+            audio.onended = function () {
+                isPlayingSound = false;
+            };
+        }
+
+        function muteSound() {
+            audioMuted = true;
+            clearTimeout(audioLoop);
+            document.getElementById('sound').src = 'static/sound-off.svg';
+        }
+
+        function unmuteSound() {
+            audioMuted = false;
+            startSoundLoop();
+            document.getElementById('sound').src = 'static/sound-on.svg';
+        }
+
+        document.getElementById('sound').addEventListener('click', function () {
+            if (audioMuted) {
+                unmuteSound();
+            } else {
+                muteSound();
+            }
+        });
+
+        function startSoundLoop() {
+            if (audioLoop || isDead) {
+                return;
+            }
+
+            function loop() {
+                if (isDead) {
+                    return;
+                }
+
+                if (Math.random() < 0.5) {
+                    if (currentHunger > 7) {
+                        playSound('static/bark.mp3');
+                    } else {
+                        playSound('static/bark_soft.mp3');
+                    }
+                } else {
+                    playSound('static/cute_growl.mp3');
+                }
+
+                clearTimeout(audioLoop);
+                audioLoop = setTimeout(loop, 10000 + Math.random() * 5000);
+            }
+
+            audioLoop = setTimeout(loop, 10000 + Math.random() * 5000);
+        }
+
+        function initGame() {
+            socket = null;
+            const wsProtoctol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsPort = window.location.port ? ':' + window.location.port : '';
+            socket = new WebSocket(wsProtoctol + '//' + window.location.hostname + wsPort + '/game');
+
+            socket.onmessage = function (e) {
+                const msg = JSON.parse(e.data);
+                if (msg.type === 'update_game_state') {
+                    updateInfo(msg);
+                }
+            };
+
+            socket.onopen = function () {
+                console.log('Status: Connected\n');
+                var info = document.querySelector('#info > div');
+                info.style = 'display: none';
+                isPlaying = true;
+            };
+
+            function onCloseOrError() {
+                console.log('Status: Disconnected\n');
+                var info = document.querySelector('#info > div');
+                info.className = 'error';
+                info.innerText = 'Disconnected from the server.';
+                info.style = '';
+                isPlaying = false;
+                setTimeout(initGame, 2000);
+                socket.onerror = undefined;
+                socket.onclose = undefined;
+            }
+
+            socket.onerror = onCloseOrError;
+            socket.onclose = onCloseOrError;
+        }
+
+        initGame();
+
+        function updateInfo(info) {
+            document.getElementById('player-count').innerText = info.player_count;
+            document.getElementById('feeder-count').innerText = info.feeder_count;
+            document.getElementById('total-feeds').innerText = info.total_feeds;
+            updateAliveness(info.birth_time, info.death_time);
+            document.getElementById('hunger-bar-current').style.height = (info.hunger * 10) + '%';
+            currentHunger = info.hunger;
+            updateDeathTimer(info.death_time);
+            updateFeedButton(info.next_feed)
+            if (info.death_time * 1000 > Date.now()) {
+                bone.style.display = null;
+                document.getElementById('feed').style.display = null;
+            }
+        }
+
+        function pad2(n) {
+            return n < 10 ? '0' + n : n;
+        }
+
+        function calcPrettyTime(time, keep) {
+            const seconds = time % 60;
+            const minutes = Math.floor(time / 60);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+            let out = '';
+            if (days > 0 || keep) {
+                out += pad2(days) + ':';
+            }
+            if (hours > 0 || keep) {
+                out += pad2(hours.toFixed() % 24) + ':';
+            }
+            if (minutes > 0 || keep) {
+                out += pad2(minutes.toFixed() % 60) + ':';
+            }
+            out += pad2(seconds.toFixed() % 60);
+            return out;
+        }
+
+        let alivenessTimeout;
+
+        function updateAliveness(birth_time, death_time) {
+            let alive = death_time * 1000 > Date.now()
+            if (alive) {
+                document.getElementById('alive-time').innerText = 'alive for ' + calcPrettyTime((Date.now() - birth_time * 1000) / 1000);
+                document.getElementById('death-time').innerText = 'until ' + new Date(death_time * 1000).toLocaleString();
+            } else {
+                document.getElementById('alive-time').innerText = 'was alive for ' + calcPrettyTime(death_time - birth_time);
+                document.getElementById('death-time').innerText = 'died on ' + new Date(death_time * 1000).toLocaleString();
+            }
+
+            if (alive) {
+                clearTimeout(alivenessTimeout);
+                alivenessTimeout = setTimeout(function () {
+                    updateAliveness(birth_time, death_time);
+                }, 1000);
+            }
+        }
+
+        let deathTimerTimeout;
+
+        function updateDeathTimer(death_time) {
+            let time_left = death_time - Math.floor((Date.now() / 1000));
+            if (time_left <= 0) {
+                time_left = 0;
+                isDead = true;
+                document.getElementById('death-timer').style.background = '#ff0000';
+                document.getElementById('title').innerText = 'Oh no! Gogo is dead!';
+                document.getElementById('hunger-bar').style.display = 'none';
+                document.getElementById('note').style.display = 'none';
+                bone.style.display = 'none';
+                document.getElementById('feed').style.display = 'none';
+                let tomb = document.createElement('img');
+                tomb.src = 'static/dog_tomb.svg';
+                let dog = document.getElementById('dog');
+                let dogParent = dog.parentNode;
+                dogParent.replaceChild(tomb, dog);
+
+                bone.removeEventListener('mousedown', mouseDown);
+                window.removeEventListener('mouseup', mouseUp);
+                window.removeEventListener('mousemove', mouseMove);
+                bone.removeEventListener('touchstart', touchStart);
+                window.removeEventListener('touchend', touchEnd);
+                window.removeEventListener('touchmove', touchMove);
+            }
+            document.querySelector('#death-timer .value').innerText = calcPrettyTime(time_left, true);
+
+            if (time_left > 0) {
+                clearTimeout(deathTimerTimeout);
+                deathTimerTimeout = setTimeout(function () {
+                    updateDeathTimer(death_time);
+                }, 1000);
+            }
+        }
+
+        function hungerText() {
+            if (currentHunger === 10) {
+                return '1h';
+            } else if (currentHunger === 0) {
+                return '5s';
+            }
+            return (6 * currentHunger) + 'm';
+        }
+
+        let feedButtonTimeout;
+
+        function updateFeedButton(next_feed) {
+            const feedButton = document.getElementById('feed');
+            feedButton.innerText = next_feed <= 0 ? 'Feed ' + hungerText() : 'Wait ' + calcPrettyTime(next_feed);
+            feedButton.disabled = next_feed > 0;
+            canFeed = next_feed <= 0;
+            if (!canFeed) {
+                clearTimeout(feedButtonTimeout);
+                feedButtonTimeout = setTimeout(function () {
+                    updateFeedButton(next_feed - 1);
+                }, 1000);
+            } else {
+                bone.classList.add('can-feed');
+                bone.classList.remove('deny');
+                bone.style.opacity = null;
+                bone.style.left = '0px';
+                bone.style.top = '0px';
+            }
+        }
+
+        let wiggleTimeout;
+
+        function wiggleTailFaster() {
+            document.getElementById('tail').classList.add('speedup');
+            clearTimeout(wiggleTimeout);
+            wiggleTimeout = setTimeout(function () {
+                document.getElementById('tail').classList.remove('speedup');
+            }, 2000);
+        }
+
+        function feed() {
+            if (isPlaying && canFeed) {
+                if (!audioMuted) {
+                    unmuteSound();
+                    playSound('static/chew.mp3');
+                }
+
+                socket.send(JSON.stringify({
+                    type: 'feed'
+                }));
+                wiggleTailFaster();
+                bone.classList.remove('can-feed');
+                bone.classList.remove('deny');
+                bone.style.opacity = '0';
+                bone.style.left = '0px';
+                bone.style.top = '0px';
+                document.getElementById('share-feed').style.display = null;
+            }
+        }
+
+        document.getElementById('feed').addEventListener('click', function () {
+            feed();
+        });
+
+        document.getElementById('head').addEventListener('click', function () {
+            if (isPlaying && !isDead) {
+                if (!audioMuted) {
+                    unmuteSound();
+
+                    if (Math.random() < 0.5) {
+                        playSound('static/bark_soft.mp3');
+                    } else {
+                        playSound('static/cute_growl.mp3');
+                    }
+                }
+                wiggleTailFaster();
+            }
+        });
+
+        let pickedUp = false;
+        let bone = document.getElementById('bone-feed');
+        let startX = 0, startY = 0, dragX = 0, dragY = 0, velX = 0, velY = 0;
+        let dragStartTime;
+
+        function simulateThrow() {
+            dragX += velX / 60;
+            dragY += velY / 60;
+            velX *= 0.90;
+            velY *= 0.90;
+            if (Math.abs(velX) < 30) velX = 0;
+            if (Math.abs(velY) < 30) velY = 0;
+            updateBonePosition()
+            if (Math.abs(velX) > 30 || Math.abs(velY) > 30) {
+                setTimeout(function () {
+                    simulateThrow();
+                }, 1000 / 60);
+            } else {
+                // land
+                if (collides(document.getElementById('head'), bone)) {
+                    feed();
+                }
+
+                // reset
+                bone.classList.remove('deny');
+                bone.style.left = '0px';
+                bone.style.top = '0px';
+            }
+        }
+
+        function collides(el1, el2) {
+            const rect1 = el1.getBoundingClientRect();
+            const rect2 = el2.getBoundingClientRect();
+
+            return !(
+                rect1.top > rect2.bottom ||
+                rect1.right < rect2.left ||
+                rect1.bottom < rect2.top ||
+                rect1.left > rect2.right
+            );
+        }
+
+        function updateBonePosition() {
+            bone.style.left = dragX + 'px';
+            bone.style.top = dragY + 'px';
+        }
+
+        function mouseDown(event) {
+            if (canFeed) {
+                boneDragStart(event.clientX, event.clientY);
+            }
+        }
+
+        function mouseUp() {
+            if (pickedUp) {
+                boneDragEnd()
+            }
+        }
+
+        function mouseMove(event) {
+            if (pickedUp) {
+                boneDragMove(event.clientX, event.clientY);
+            }
+            eyeTracking(event.clientX, event.clientY);
+        }
+
+        function touchStart(event) {
+            if (canFeed) {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                event = event.changedTouches[0]
+                boneDragStart(event.clientX, event.clientY);
+            }
+        }
+
+        function touchEnd(event) {
+            if (pickedUp) {
+                event.preventDefault();
+                boneDragEnd();
+                resetEyes();
+            }
+        }
+
+        function touchMove(event) {
+            if (pickedUp) {
+                console.log('touchmove');
+                event.preventDefault();
+                event = event.changedTouches[0]
+                boneDragMove(event.clientX, event.clientY);
+                eyeTracking(event.clientX, event.clientY);
+            }
+        }
+
+        bone.addEventListener('mousedown', mouseDown);
+        window.addEventListener('mouseup', mouseUp);
+        window.addEventListener('mousemove', mouseMove);
+        bone.addEventListener('touchstart', touchStart);
+        window.addEventListener('touchend', touchEnd);
+        window.addEventListener('touchmove', touchMove);
+
+        function boneDragStart(x, y) {
+            pickedUp = true;
+            startX = x;
+            startY = y;
+            dragX = dragY = 0;
+            dragStartTime = Date.now()
+        }
+
+        function boneDragEnd() {
+            pickedUp = false;
+            let t = (Date.now() - dragStartTime) / 1000;
+            velX = dragX / t;
+            velY = dragY / t;
+            bone.classList.add('deny');
+            simulateThrow();
+        }
+
+        function boneDragMove(x, y) {
+            dragX = x - startX;
+            dragY = y - startY;
+            updateBonePosition()
+        }
+
+        function eyeTracking(x, y) {
+            eyeToTarget('eye_right', x, y)
+            eyeToTarget('eye_left', x, y)
+        }
+
+        function eyeToTarget(id, x, y) {
+            let eye = document.getElementById(id);
+            let rect = eye.getBoundingClientRect();
+            let dx = x - rect.x;
+            let dy = y - rect.y;
+            let n = Math.sqrt(dx * dx + dy * dy);
+            eye.style.transform = 'translate(' + (dx / n) + 'px, ' + (dy / n) + 'px)';
+        }
+
+        function resetEyes() {
+            resetEye('eye_right');
+            resetEye('eye_left');
+        }
+
+        function resetEye(id) {
+            let eye = document.getElementById(id);
+            eye.style.transform = 'translate(0px, 0px)';
+        }
+    })();
+</script>
+</html>

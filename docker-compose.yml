@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  web:
+    ports:
+      - 8080:4446
+    image: 127.0.0.1:5000/savegogo
+    build: .
+    environment:
+      - VIRTUAL_HOST=savegogo.icy.pt
+      - LETSENCRYPT_HOST=savegogo.icy.pt
+      - HSTS=off
+    volumes:
+      - game_data:/data/
+    networks:
+      - icynetwork
+    deploy:
+      replicas: 1
+      placement:
+        max_replicas_per_node: 1
+networks:
+  icynetwork:
+    external: true
+volumes:
+  game_data:
